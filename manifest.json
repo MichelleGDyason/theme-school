@@ -1,9 +1,13 @@
 {
   "id": "theme-school",
   "name": "Theme School",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minAppVersion": "1.6.0",
   "description": "Learn theme development visually, then graduate to standalone CSS.",
   "author": "Michelle G Dyason",
+  "fundingUrl": {
+    "GitHub Sponsors": "https://github.com/sponsors/MichelleGDyason",
+    "Buy Me a Coffee": "https://buymeacoffee.com/MichelleGDyason"
+  },
   "isDesktopOnly": false
 }

@@ -56,6 +56,13 @@ The release assets required by Obsidian are `main.js`, `manifest.json`, and `sty
 
 Develop plugins in a separate test vault. Exporting writes only to `<your-config-folder>/themes/<your-theme-name>` in the current vault; Obsidian supplies the configured folder name at runtime.
 
+## Support development
+
+If Theme School helps you learn to make your own themes, you can support Michelle's work:
+
+- [GitHub Sponsors](https://github.com/sponsors/MichelleGDyason)
+- [Buy Me a Coffee](https://buymeacoffee.com/MichelleGDyason)
+
 ## License
 
 MIT
