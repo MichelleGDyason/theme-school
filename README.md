@@ -61,7 +61,7 @@ Develop plugins in a separate test vault. Exporting writes only to `<your-config
 If Theme School helps you learn to make your own themes, you can support Michelle's work:
 
 - [GitHub Sponsors](https://github.com/sponsors/MichelleGDyason)
-- [Buy Me a Coffee](https://buymeacoffee.com/MichelleGDyason)
+- [Buy Me a Coffee](https://buymeacoffee.com/michellegdyason)
 
 ## License
 
