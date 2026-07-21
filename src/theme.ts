@@ -90,13 +90,6 @@ export function generateThemeManifest(data: StudioData): string {
   }, null, 2) + "\n";
 }
 
-export function previewCss(data: StudioData): string {
-  const css = generateThemeCss(data);
-  return css.replace(/(^|\n)body\s*\{/g, "$1body.theme-studio-preview {")
-    .replace(/(^|\n)\.theme-light\s*\{/g, "$1body.theme-studio-preview.theme-light {")
-    .replace(/(^|\n)\.theme-dark\s*\{/g, "$1body.theme-studio-preview.theme-dark {");
-}
-
 export function contrastRatio(foreground: string, background: string): number | null {
   const parse = (hex: string): number[] | null => {
     const normalized = hex.replace("#", "");

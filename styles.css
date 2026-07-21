@@ -86,7 +86,7 @@
 .theme-studio__mock-nav div { display: flex; align-items: center; height: var(--nav-item-height); padding: 0 6px; overflow: hidden; border-radius: var(--nav-item-radius); white-space: nowrap; font-size: 9px; color: var(--text-muted); }
 .theme-studio__mock-nav div.is-active { background: var(--background-secondary-alt); color: var(--text-normal); }
 .theme-studio__mock-note { min-width: 0; padding: 28px 22px; line-height: var(--line-height-normal); }
-.theme-studio__mock-note small { color: var(--text-muted); font-family: var(--font-interface-theme); font-size: 8px; letter-spacing: .14em; }
+.theme-studio__mock-note small { color: var(--text-muted); font-family: var(--font-interface-theme); font-size: 8px; letter-spacing: .14em; text-transform: uppercase; }
 .theme-studio__mock-note h1 { margin: 8px 0 14px; font-size: var(--h1-size); font-weight: var(--heading-weight); line-height: 1.05; letter-spacing: -.035em; }
 .theme-studio__mock-note p { margin: 0 0 var(--p-spacing); font-size: 10px; }
 .theme-studio__mock-note blockquote { margin: 16px 0; padding-left: 10px; border-left: 3px solid var(--blockquote-border-color); color: var(--text-muted); font-size: 9px; }

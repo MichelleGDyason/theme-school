@@ -24,9 +24,6 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian2 = require("obsidian");
 
-// src/view.ts
-var import_obsidian = require("obsidian");
-
 // src/controls.ts
 var CATEGORIES = ["Colour", "Typography", "Shape & spacing", "Editor", "Navigation", "Advanced"];
 var CONTROLS = [
@@ -77,8 +74,11 @@ var CONTROLS = [
   { id: "modal-radius", label: "Modal roundness", category: "Shape & spacing", cssVar: "--modal-radius", kind: "range", description: "Corners of dialogs and popovers.", lesson: "Large containers can tolerate a slightly larger radius than small controls while still feeling related.", defaultLight: "10px", scope: "shared", min: 0, max: 28, step: 1, unit: "px" },
   { id: "callout-radius", label: "Callout roundness", category: "Shape & spacing", cssVar: "--callout-radius", kind: "range", description: "Corners on note callouts.", lesson: "Callouts are content components. Their geometry can echo cards, inputs, or neither depending on the hierarchy you want.", defaultLight: "6px", scope: "shared", min: 0, max: 24, step: 1, unit: "px" },
   { id: "embed-radius", label: "Embed roundness", category: "Shape & spacing", cssVar: "--embed-block-radius", kind: "range", description: "Corners around embedded notes and media.", lesson: "Embeds are documents inside documents. A boundary and radius help communicate that nesting.", defaultLight: "6px", scope: "shared", min: 0, max: 24, step: 1, unit: "px" },
-  { id: "custom-css", label: "Your first hand-written CSS", category: "Advanced", cssVar: "", kind: "text", description: "Optional CSS appended to the exported theme.", lesson: "This is the bridge out of the tool. Start with a selector, add a property inside braces, and inspect the result. Example: .markdown-rendered strong { color: var(--text-accent); }", defaultLight: "", scope: "shared" }
+  { id: "custom-css", label: "Your first hand-written CSS", category: "Advanced", cssVar: "", kind: "text", description: "Optional CSS appended to the export; it is not live-applied for safety.", lesson: "This is the bridge out of the tool. Start with a selector, add a property inside braces, export, then inspect it in a test vault. Example: .markdown-rendered strong { color: var(--text-accent); }", defaultLight: "", scope: "shared" }
 ];
+
+// src/view.ts
+var import_obsidian = require("obsidian");
 
 // src/theme.ts
 var DEFAULT_DATA = {
@@ -165,10 +165,6 @@ function generateThemeManifest(data) {
     minAppVersion: "1.6.0",
     author: data.author.trim() || "Your name"
   }, null, 2) + "\n";
-}
-function previewCss(data) {
-  const css = generateThemeCss(data);
-  return css.replace(/(^|\n)body\s*\{/g, "$1body.theme-studio-preview {").replace(/(^|\n)\.theme-light\s*\{/g, "$1body.theme-studio-preview.theme-light {").replace(/(^|\n)\.theme-dark\s*\{/g, "$1body.theme-studio-preview.theme-dark {");
 }
 function contrastRatio(foreground, background) {
   const parse = (hex) => {
@@ -265,7 +261,7 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
     };
     const identity = sidebar.createDiv({ cls: "theme-studio__identity" });
     identity.createEl("label", { text: "Theme name" });
-    const name = identity.createEl("input", { attr: { type: "text", placeholder: "My First Theme" } });
+    const name = identity.createEl("input", { attr: { type: "text", placeholder: "My first theme" } });
     name.value = this.plugin.data.themeName;
     name.onchange = () => {
       this.plugin.data.themeName = name.value;
@@ -307,7 +303,7 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
     reset.onclick = () => {
       this.plugin.data = { ...cloneDefaults(), author: this.plugin.data.author };
       void this.saveAndRender();
-      new import_obsidian.Notice("Theme School reset to Obsidian-inspired defaults");
+      new import_obsidian.Notice("Theme School reset to the default palette");
     };
   }
   renderControls(workspace) {
@@ -402,16 +398,16 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
     mockNav.createEl("b", { text: "My vault" });
     ["Inbox", "Ideas", "Reading notes"].forEach((name, index) => mockNav.createDiv({ cls: index === 1 ? "is-active" : "", text: name }));
     const note = canvas.createDiv({ cls: "theme-studio__mock-note" });
-    note.createEl("small", { text: "DESIGN NOTE" });
+    note.createEl("small", { text: "Design note" });
     note.createEl("h1", { text: "A theme is a system" });
     note.createEl("p", { text: "Surfaces create depth. Type creates rhythm. Repetition turns choices into a visual language." });
     const quote = note.createEl("blockquote");
     quote.createSpan({ text: "Change one relationship at a time, then test both baselines." });
     const details = note.createEl("p");
     details.appendText("Follow a ");
-    details.createEl("a", { text: "link", href: "#" });
+    details.createEl("a", { href: "#" }).appendText("link");
     details.appendText(", mark an ");
-    details.createEl("mark", { text: "important idea" });
+    details.createEl("mark").appendText("important idea");
     details.appendText(", and notice what attracts your eye.");
     note.createEl("button", { text: "A primary action" });
     const syllabus = aside.createDiv({ cls: "theme-studio__syllabus" });
@@ -448,14 +444,15 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
   }
   async exportToVault() {
     const slug = (this.plugin.data.themeName || "my-theme").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    let folder = `.obsidian/themes/${slug}`;
+    const themesFolder = `${this.app.vault.configDir}/themes`;
+    let folder = `${themesFolder}/${slug}`;
     const adapter = this.app.vault.adapter;
     if (await adapter.exists(folder)) {
       let suffix = 2;
       while (await adapter.exists(`${folder}-${suffix}`)) suffix += 1;
       folder = `${folder}-${suffix}`;
     }
-    if (!await adapter.exists(".obsidian/themes")) await adapter.mkdir(".obsidian/themes");
+    if (!await adapter.exists(themesFolder)) await adapter.mkdir(themesFolder);
     await adapter.mkdir(folder);
     await adapter.write(`${folder}/theme.css`, generateThemeCss(this.plugin.data));
     await adapter.write(`${folder}/manifest.json`, generateThemeManifest(this.plugin.data));
@@ -508,7 +505,7 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
 var ThemeStudioPlugin = class extends import_obsidian2.Plugin {
   constructor() {
     super(...arguments);
-    this.previewStyleEl = null;
+    this.originalInlineValues = /* @__PURE__ */ new Map();
   }
   async onload() {
     this.data = mergeData(await this.loadData());
@@ -520,6 +517,11 @@ var ThemeStudioPlugin = class extends import_obsidian2.Plugin {
       void this.persist();
       new import_obsidian2.Notice(`Theme School preview ${this.data.livePreview ? "on" : "off"}`);
     } });
+    const themeObserver = new MutationObserver(() => {
+      if (this.data.livePreview) this.applyPreview();
+    });
+    themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    this.register(() => themeObserver.disconnect());
     if (this.data.livePreview) this.applyPreview();
   }
   onunload() {
@@ -529,7 +531,7 @@ var ThemeStudioPlugin = class extends import_obsidian2.Plugin {
     const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_THEME_STUDIO)[0];
     const leaf = existing != null ? existing : this.app.workspace.getLeaf("tab");
     if (!existing) await leaf.setViewState({ type: VIEW_TYPE_THEME_STUDIO, active: true });
-    this.app.workspace.revealLeaf(leaf);
+    this.app.workspace.setActiveLeaf(leaf, { focus: true });
   }
   async persist() {
     await this.saveData(this.data);
@@ -537,16 +539,22 @@ var ThemeStudioPlugin = class extends import_obsidian2.Plugin {
     else this.removePreview();
   }
   applyPreview() {
-    if (!this.previewStyleEl) {
-      this.previewStyleEl = document.head.createEl("style", { attr: { "data-theme-studio-preview": "true" } });
-    }
-    this.previewStyleEl.textContent = previewCss(this.data);
-    document.body.addClass("theme-studio-preview");
+    const mode = document.body.hasClass("theme-dark") ? "dark" : "light";
+    CONTROLS.filter((control) => control.cssVar).forEach((control) => {
+      if (!this.originalInlineValues.has(control.cssVar)) {
+        this.originalInlineValues.set(control.cssVar, {
+          value: document.body.style.getPropertyValue(control.cssVar),
+          priority: document.body.style.getPropertyPriority(control.cssVar)
+        });
+      }
+      document.body.style.setProperty(control.cssVar, getValue(this.data, control.id, mode));
+    });
   }
   removePreview() {
-    var _a;
-    document.body.removeClass("theme-studio-preview");
-    (_a = this.previewStyleEl) == null ? void 0 : _a.remove();
-    this.previewStyleEl = null;
+    this.originalInlineValues.forEach(({ value, priority }, property) => {
+      if (value) document.body.style.setProperty(property, value, priority);
+      else document.body.style.removeProperty(property);
+    });
+    this.originalInlineValues.clear();
   }
 };

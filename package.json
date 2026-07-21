@@ -1,21 +1,32 @@
 {
   "name": "theme-school",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A disposable visual learning school for designing standalone Obsidian themes.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "check": "tsc -noEmit -skipLibCheck"
+    "check": "tsc -noEmit -skipLibCheck",
+    "lint": "eslint src --max-warnings=0"
   },
-  "keywords": ["obsidian", "theme", "css", "visual-editor", "learning"],
+  "keywords": [
+    "obsidian",
+    "theme",
+    "css",
+    "visual-editor",
+    "learning"
+  ],
   "author": "Michelle G Dyason",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@eslint/json": "^0.14.0",
     "@types/node": "^24.0.0",
-    "builtin-modules": "^4.0.0",
     "esbuild": "^0.25.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-obsidianmd": "^0.4.1",
     "obsidian": "latest",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.65.0"
   }
 }

@@ -19,7 +19,7 @@ A theme can style Obsidian, but it cannot provide an interactive teaching interf
 - The connection between a visual control and its Obsidian CSS variable
 - The first step beyond variables: adding a hand-written CSS selector
 
-Theme School also checks normal body-text contrast against the WCAG AA 4.5:1 threshold.
+Theme School also checks normal body-text contrast against the WCAG AA 4.5:1 threshold. Live preview applies CSS variables reversibly; hand-written graduation CSS is export-only and should be tested through the exported theme.
 
 ## Install for development
 
@@ -33,7 +33,7 @@ Theme School also checks normal body-text contrast against the WCAG AA 4.5:1 thr
 1. Explore relationships with the visual controls.
 2. Notice and learn the CSS variable beside every control.
 3. Use **Export → Create theme folder in this vault**.
-4. Open the exported `.obsidian/themes/your-theme/theme.css` and connect your choices to the declarations.
+4. Open the exported `<your-config-folder>/themes/your-theme/theme.css` and connect your choices to the declarations.
 5. Add one small rule in the **Advanced** section and see it appear at the end of the export.
 6. Disable or uninstall Theme School. Your theme remains a normal Obsidian theme.
 
@@ -54,7 +54,7 @@ The release assets required by Obsidian are `main.js`, `manifest.json`, and `sty
 
 ## Safety
 
-Develop plugins in a separate test vault. Exporting writes only to `.obsidian/themes/<your-theme-name>` in the current vault.
+Develop plugins in a separate test vault. Exporting writes only to `<your-config-folder>/themes/<your-theme-name>` in the current vault; Obsidian supplies the configured folder name at runtime.
 
 ## License
 

@@ -80,7 +80,7 @@ export class ThemeStudioView extends ItemView {
 
     const identity = sidebar.createDiv({ cls: "theme-studio__identity" });
     identity.createEl("label", { text: "Theme name" });
-    const name = identity.createEl("input", { attr: { type: "text", placeholder: "My First Theme" } });
+    const name = identity.createEl("input", { attr: { type: "text", placeholder: "My first theme" } });
     name.value = this.plugin.data.themeName;
     name.onchange = () => { this.plugin.data.themeName = name.value; void this.saveAndRender(); };
     identity.createEl("label", { text: "Designer" });
@@ -109,7 +109,7 @@ export class ThemeStudioView extends ItemView {
     reset.onclick = () => {
       this.plugin.data = { ...cloneDefaults(), author: this.plugin.data.author };
       void this.saveAndRender();
-      new Notice("Theme School reset to Obsidian-inspired defaults");
+      new Notice("Theme School reset to the default palette");
     };
   }
 
@@ -199,16 +199,16 @@ export class ThemeStudioView extends ItemView {
     mockNav.createEl("b", { text: "My vault" });
     ["Inbox", "Ideas", "Reading notes"].forEach((name, index) => mockNav.createDiv({ cls: index === 1 ? "is-active" : "", text: name }));
     const note = canvas.createDiv({ cls: "theme-studio__mock-note" });
-    note.createEl("small", { text: "DESIGN NOTE" });
+    note.createEl("small", { text: "Design note" });
     note.createEl("h1", { text: "A theme is a system" });
     note.createEl("p", { text: "Surfaces create depth. Type creates rhythm. Repetition turns choices into a visual language." });
     const quote = note.createEl("blockquote");
     quote.createSpan({ text: "Change one relationship at a time, then test both baselines." });
     const details = note.createEl("p");
     details.appendText("Follow a ");
-    details.createEl("a", { text: "link", href: "#" });
+    details.createEl("a", { href: "#" }).appendText("link");
     details.appendText(", mark an ");
-    details.createEl("mark", { text: "important idea" });
+    details.createEl("mark").appendText("important idea");
     details.appendText(", and notice what attracts your eye.");
     note.createEl("button", { text: "A primary action" });
     const syllabus = aside.createDiv({ cls: "theme-studio__syllabus" });
@@ -247,14 +247,15 @@ export class ThemeStudioView extends ItemView {
 
   private async exportToVault(): Promise<void> {
     const slug = (this.plugin.data.themeName || "my-theme").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    let folder = `.obsidian/themes/${slug}`;
+    const themesFolder = `${this.app.vault.configDir}/themes`;
+    let folder = `${themesFolder}/${slug}`;
     const adapter = this.app.vault.adapter;
     if (await adapter.exists(folder)) {
       let suffix = 2;
       while (await adapter.exists(`${folder}-${suffix}`)) suffix += 1;
       folder = `${folder}-${suffix}`;
     }
-    if (!(await adapter.exists(".obsidian/themes"))) await adapter.mkdir(".obsidian/themes");
+    if (!(await adapter.exists(themesFolder))) await adapter.mkdir(themesFolder);
     await adapter.mkdir(folder);
     await adapter.write(`${folder}/theme.css`, generateThemeCss(this.plugin.data));
     await adapter.write(`${folder}/manifest.json`, generateThemeManifest(this.plugin.data));
