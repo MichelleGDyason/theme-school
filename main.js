@@ -26,6 +26,30 @@ var import_obsidian2 = require("obsidian");
 
 // src/controls.ts
 var CATEGORIES = ["Colour", "Typography", "Shape & spacing", "Editor", "Navigation", "Advanced"];
+var TEXT_FONTS = [
+  { label: "System default", value: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", description: "Clean, familiar, and available on every device" },
+  { label: "Arial", value: "Arial, sans-serif", description: "Neutral and highly portable" },
+  { label: "Helvetica", value: "Helvetica, Arial, sans-serif", description: "Crisp and restrained" },
+  { label: "Verdana", value: "Verdana, Geneva, sans-serif", description: "Open and very readable at small sizes" },
+  { label: "Trebuchet MS", value: "'Trebuchet MS', sans-serif", description: "Friendly with a little personality" },
+  { label: "Avenir Next", value: "'Avenir Next', Avenir, sans-serif", description: "Geometric and polished; mainly Apple devices" },
+  { label: "Gill Sans", value: "'Gill Sans', 'Gill Sans MT', sans-serif", description: "Humanist and elegant; availability varies" },
+  { label: "Atkinson Hyperlegible", value: "'Atkinson Hyperlegible', Arial, sans-serif", description: "Accessibility-focused; must be installed" },
+  { label: "Georgia", value: "Georgia, serif", description: "Warm, sturdy, and designed for screens" },
+  { label: "Palatino", value: "Palatino, 'Palatino Linotype', serif", description: "Bookish and spacious" },
+  { label: "Baskerville", value: "Baskerville, Georgia, serif", description: "Literary and refined; availability varies" },
+  { label: "Times New Roman", value: "'Times New Roman', Times, serif", description: "Traditional and highly portable" }
+];
+var CODE_FONTS = [
+  { label: "System monospace", value: "'SFMono-Regular', Consolas, 'Liberation Mono', monospace", description: "Uses the device\u2019s dependable code font" },
+  { label: "SF Mono", value: "'SFMono-Regular', Menlo, monospace", description: "Clean Apple code font; falls back to Menlo" },
+  { label: "Menlo", value: "Menlo, Monaco, monospace", description: "Clear and compact; common on Apple devices" },
+  { label: "Monaco", value: "Monaco, 'Courier New', monospace", description: "Classic Mac coding character" },
+  { label: "Consolas", value: "Consolas, 'Liberation Mono', monospace", description: "Readable Windows code font" },
+  { label: "Courier New", value: "'Courier New', Courier, monospace", description: "Typewriter-like and widely available" },
+  { label: "Fira Code", value: "'Fira Code', monospace", description: "Modern coding font; must be installed" },
+  { label: "JetBrains Mono", value: "'JetBrains Mono', monospace", description: "Spacious coding font; must be installed" }
+];
 var CONTROLS = [
   { id: "background-primary", label: "Note background", category: "Colour", cssVar: "--background-primary", kind: "color", description: "The main canvas behind notes and most panels.", lesson: "A theme starts with surfaces. In a light baseline this is usually the palest colour; in a dark baseline it is usually the darkest.", defaultLight: "#ffffff", defaultDark: "#1e1e1e" },
   { id: "background-secondary", label: "Sidebar background", category: "Colour", cssVar: "--background-secondary", kind: "color", description: "Sidebars, ribbons, and secondary surfaces.", lesson: "A small contrast from the note background creates hierarchy without adding borders everywhere.", defaultLight: "#f6f6f6", defaultDark: "#262626" },
@@ -37,9 +61,9 @@ var CONTROLS = [
   { id: "border", label: "Borders", category: "Colour", cssVar: "--background-modifier-border", kind: "color", description: "Dividers, outlines, and panel boundaries.", lesson: "Borders are structural punctuation. Low contrast makes a soft theme; higher contrast makes a technical, explicit one.", defaultLight: "#e0e0e0", defaultDark: "#3f3f3f" },
   { id: "highlight", label: "Highlight", category: "Colour", cssVar: "--text-highlight-bg", kind: "color", description: "The background of ==highlighted text==.", lesson: "Highlights should be visible behind body text without reducing its contrast.", defaultLight: "#fff3a3", defaultDark: "#5c5323" },
   { id: "selection", label: "Text selection", category: "Colour", cssVar: "--text-selection", kind: "color", description: "The colour shown while selecting text.", lesson: "Selection is temporary state. Make it obvious, but not so opaque that selected words disappear.", defaultLight: "#cfe2ff", defaultDark: "#364c70" },
-  { id: "font-interface", label: "Interface font", category: "Typography", cssVar: "--font-interface-theme", kind: "text", description: "Font stack for buttons, tabs, and navigation.", lesson: "A font stack is a priority list. Always end with a generic fallback such as sans-serif.", defaultLight: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", scope: "shared" },
-  { id: "font-text", label: "Reading font", category: "Typography", cssVar: "--font-text-theme", kind: "text", description: "Font stack for notes and reading view.", lesson: "Separate interface and reading fonts if they have different jobs. System fonts are dependable; custom fonts must exist on the reader\u2019s device.", defaultLight: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", scope: "shared" },
-  { id: "font-monospace", label: "Code font", category: "Typography", cssVar: "--font-monospace-theme", kind: "text", description: "Font stack for code blocks and inline code.", lesson: "Monospace means every character occupies equal width. End the list with monospace.", defaultLight: "'SFMono-Regular', Consolas, 'Liberation Mono', monospace", scope: "shared" },
+  { id: "font-interface", label: "Interface font", category: "Typography", cssVar: "--font-interface-theme", kind: "font", description: "Choose the typeface used for buttons, tabs, and navigation.", lesson: "The dropdown writes the font stack for you. System default is the safest shared-theme choice; fonts marked \u2018must be installed\u2019 fall back when another reader does not have them.", defaultLight: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", scope: "shared", options: TEXT_FONTS },
+  { id: "font-text", label: "Reading font", category: "Typography", cssVar: "--font-text-theme", kind: "font", description: "Choose the typeface used in notes and reading view.", lesson: "Serifs can feel bookish and guide the eye through long prose; sans serifs often feel cleaner and more direct. Choose by reading the specimen, not by memorising names.", defaultLight: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", scope: "shared", options: TEXT_FONTS },
+  { id: "font-monospace", label: "Code font", category: "Typography", cssVar: "--font-monospace-theme", kind: "font", description: "Choose an equal-width typeface for code blocks and inline code.", lesson: "Every character in a monospace font occupies equal width. That alignment makes code structure easier to scan; the dropdown keeps a monospace fallback automatically.", defaultLight: "'SFMono-Regular', Consolas, 'Liberation Mono', monospace", scope: "shared", options: CODE_FONTS },
   { id: "font-size", label: "Base text size", category: "Typography", cssVar: "--font-text-size", kind: "range", description: "The default reading size in pixels.", lesson: "This is a root design decision: line length, spacing, and headings all feel different when body size changes.", defaultLight: "16px", scope: "shared", min: 13, max: 22, step: 1, unit: "px" },
   { id: "line-height", label: "Reading line height", category: "Typography", cssVar: "--line-height-normal", kind: "range", description: "Vertical breathing room between lines.", lesson: "Long-form reading usually benefits from 1.5\u20131.8. Dense interfaces can be tighter.", defaultLight: "1.6", scope: "shared", min: 1.2, max: 2, step: 0.05 },
   { id: "heading-weight", label: "Heading weight", category: "Typography", cssVar: "--heading-weight", kind: "range", description: "Boldness shared by note headings.", lesson: "Weight builds hierarchy without changing colour. Values depend on what the selected font actually supports.", defaultLight: "700", scope: "shared", min: 400, max: 900, step: 100 },
@@ -372,11 +396,42 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
       (_a = control.options) == null ? void 0 : _a.forEach((option) => select.createEl("option", { text: option.label, value: option.value }));
       select.value = value;
       select.onchange = () => update(select.value);
+    } else if (control.kind === "font") {
+      this.createFontPicker(row, control, value, update);
     } else {
       const input = row.createEl("input", { cls: "theme-studio__text-input", attr: { type: "text", "aria-label": control.label } });
       input.value = value;
       input.onchange = () => update(input.value);
     }
+  }
+  createFontPicker(row, control, value, update) {
+    var _a, _b, _c;
+    const picker = row.createDiv({ cls: "theme-studio__font-picker" });
+    const select = picker.createEl("select", { attr: { "aria-label": control.label } });
+    const knownValue = (_b = (_a = control.options) == null ? void 0 : _a.some((option) => option.value === value)) != null ? _b : false;
+    if (!knownValue) select.createEl("option", { text: "Existing custom font", value });
+    (_c = control.options) == null ? void 0 : _c.forEach((option) => {
+      var _a2;
+      const item = select.createEl("option", { text: `${option.label} \u2014 ${(_a2 = option.description) != null ? _a2 : ""}`, value: option.value });
+      item.style.fontFamily = option.value;
+    });
+    select.value = value;
+    const specimen = picker.createDiv({ cls: "theme-studio__font-specimen" });
+    const sample = specimen.createDiv({ cls: "theme-studio__font-sample" });
+    const explanation = specimen.createDiv({ cls: "theme-studio__font-description" });
+    const refreshSpecimen = () => {
+      var _a2, _b2;
+      const selected = (_a2 = control.options) == null ? void 0 : _a2.find((option) => option.value === select.value);
+      select.style.fontFamily = select.value;
+      sample.style.fontFamily = select.value;
+      sample.textContent = control.id === "font-monospace" ? "Aa 0123 { code }" : "Aa The shape of an idea";
+      explanation.textContent = (_b2 = selected == null ? void 0 : selected.description) != null ? _b2 : "A custom font choice saved by an earlier version";
+    };
+    refreshSpecimen();
+    select.onchange = () => {
+      refreshSpecimen();
+      update(select.value);
+    };
   }
   renderContrast(card) {
     const mode = this.plugin.data.mode;

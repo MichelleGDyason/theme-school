@@ -171,11 +171,38 @@ export class ThemeStudioView extends ItemView {
       control.options?.forEach((option) => select.createEl("option", { text: option.label, value: option.value }));
       select.value = value;
       select.onchange = () => update(select.value);
+    } else if (control.kind === "font") {
+      this.createFontPicker(row, control, value, update);
     } else {
       const input = row.createEl("input", { cls: "theme-studio__text-input", attr: { type: "text", "aria-label": control.label } });
       input.value = value;
       input.onchange = () => update(input.value);
     }
+  }
+
+  private createFontPicker(row: HTMLElement, control: ThemeControl, value: string, update: (next: string) => void): void {
+    const picker = row.createDiv({ cls: "theme-studio__font-picker" });
+    const select = picker.createEl("select", { attr: { "aria-label": control.label } });
+    const knownValue = control.options?.some((option) => option.value === value) ?? false;
+    if (!knownValue) select.createEl("option", { text: "Existing custom font", value });
+    control.options?.forEach((option) => {
+      const item = select.createEl("option", { text: `${option.label} — ${option.description ?? ""}`, value: option.value });
+      item.style.fontFamily = option.value;
+    });
+    select.value = value;
+
+    const specimen = picker.createDiv({ cls: "theme-studio__font-specimen" });
+    const sample = specimen.createDiv({ cls: "theme-studio__font-sample" });
+    const explanation = specimen.createDiv({ cls: "theme-studio__font-description" });
+    const refreshSpecimen = (): void => {
+      const selected = control.options?.find((option) => option.value === select.value);
+      select.style.fontFamily = select.value;
+      sample.style.fontFamily = select.value;
+      sample.textContent = control.id === "font-monospace" ? "Aa 0123 { code }" : "Aa The shape of an idea";
+      explanation.textContent = selected?.description ?? "A custom font choice saved by an earlier version";
+    };
+    refreshSpecimen();
+    select.onchange = () => { refreshSpecimen(); update(select.value); };
   }
 
   private renderContrast(card: HTMLElement): void {

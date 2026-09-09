@@ -12,6 +12,7 @@ A theme can style Obsidian, but it cannot provide an interactive teaching interf
 
 - Separate light and dark baselines rather than treating one as an inversion
 - Surface hierarchy, readable contrast, accents, borders, selections, and highlights
+- Visual font dropdowns for interface, reading, and code typefaces, with live specimens and portability guidance
 - Interface, reading, and monospace type systems
 - Type scale, line height, content width, and paragraph rhythm
 - Corner, input, tab, and divider systems

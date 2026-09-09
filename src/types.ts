@@ -1,6 +1,6 @@
 export type Mode = "light" | "dark";
 export type Category = "Colour" | "Typography" | "Shape & spacing" | "Editor" | "Navigation" | "Advanced";
-export type ControlKind = "color" | "range" | "select" | "text" | "toggle";
+export type ControlKind = "color" | "font" | "range" | "select" | "text" | "toggle";
 
 export interface ThemeValueSet {
   light: Record<string, string>;
@@ -32,5 +32,5 @@ export interface ThemeControl {
   max?: number;
   step?: number;
   unit?: string;
-  options?: Array<{ label: string; value: string }>;
+  options?: Array<{ label: string; value: string; description?: string }>;
 }

@@ -67,6 +67,11 @@
 .theme-studio__input-row input[type="range"] { flex: 1; accent-color: var(--interactive-accent); }
 .theme-studio__input-row output { min-width: 50px; font-family: var(--font-monospace); font-size: 11px; text-align: right; }
 .theme-studio__input-row select { min-width: 170px; }
+.theme-studio__font-picker { display: grid; width: min(100%, 460px); min-width: 0; gap: 8px; }
+.theme-studio__font-picker select { width: 100%; min-width: 0; }
+.theme-studio__font-specimen { padding: 12px 14px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s); background: var(--background-secondary); }
+.theme-studio__font-sample { overflow: hidden; color: var(--text-normal); font-size: 19px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.theme-studio__font-description { margin-top: 3px; color: var(--studio-muted); font-family: var(--font-interface); font-size: 10px; }
 .theme-studio__text-input { flex: 1; }
 .theme-studio__scope { padding: 3px 6px; border-radius: 20px; background: var(--background-secondary); color: var(--studio-muted); font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
 .theme-studio__lesson { display: flex; align-items: flex-start; gap: 8px; margin-top: 11px; padding: 9px 10px; border-left: 2px solid var(--interactive-accent); background: color-mix(in srgb, var(--interactive-accent) 6%, transparent); }
