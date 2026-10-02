@@ -1,4 +1,4 @@
-import { ItemView, Menu, Notice, WorkspaceLeaf, setIcon } from "obsidian";
+import { ItemView, Menu, Notice, Platform, WorkspaceLeaf, setIcon } from "obsidian";
 import type ThemeStudioPlugin from "./main";
 import { CATEGORIES, CONTROLS } from "./controls";
 import { cloneDefaults, contrastRatio, generateThemeCss, generateThemeManifest, getValue, setValue } from "./theme";
@@ -11,6 +11,9 @@ export class ThemeStudioView extends ItemView {
   private category: Category = "Colour";
   private search = "";
   private showLessons = true;
+  private showCss = true;
+  private mockCanvas: HTMLElement | null = null;
+  private cssOutput: HTMLElement | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: ThemeStudioPlugin) {
     super(leaf);
@@ -105,12 +108,20 @@ export class ThemeStudioView extends ItemView {
     check.checked = this.showLessons;
     check.onchange = () => { this.showLessons = check.checked; this.render(); };
     lessonToggle.createSpan({ text: "Show teaching notes" });
-    const reset = sidebar.createEl("button", { cls: "theme-studio__reset", text: "Reset the whole experiment" });
+    const reset = sidebar.createEl("button", { cls: "theme-studio__reset", text: "Start with a blank slate" });
     reset.onclick = () => {
-      this.plugin.data = { ...cloneDefaults(), author: this.plugin.data.author };
+      this.plugin.data = { ...cloneDefaults(), author: this.plugin.data.author, systemFonts: this.plugin.data.systemFonts };
       void this.saveAndRender();
-      new Notice("Theme School reset to the default palette");
+      new Notice("Theme School is back to its neutral starting point. To remove an installed theme too, choose default in settings → appearance → themes.", 9000);
     };
+    sidebar.createEl("p", {
+      cls: "theme-studio__reset-note",
+      text: "This clears your Theme School choices. For a completely clean canvas, also select default under settings → appearance → themes."
+    });
+    this.renderInstallHelp(sidebar);
+    const syllabus = sidebar.createDiv({ cls: "theme-studio__syllabus" });
+    syllabus.createEl("strong", { text: "The route off this scaffold" });
+    ["1. Make relationships visually", "2. Read the variable beside each choice", "3. Inspect your exported theme.css", "4. Add one selector in Advanced", "5. Uninstall the plugin; keep the theme"].forEach((step) => syllabus.createDiv({ text: step }));
   }
 
   private renderControls(workspace: HTMLElement): void {
@@ -118,6 +129,7 @@ export class ThemeStudioView extends ItemView {
     const intro = main.createDiv({ cls: "theme-studio__section-intro" });
     intro.createEl("h2", { text: this.search ? `Results for “${this.search}”` : this.category });
     intro.createEl("p", { text: this.categoryIntro(this.category) });
+    if (!this.search && this.category === "Typography") this.renderSystemFontImporter(main);
     const query = this.search.toLowerCase();
     const controls = CONTROLS.filter((control) => query
       ? `${control.label} ${control.description} ${control.lesson} ${control.cssVar}`.toLowerCase().includes(query)
@@ -146,7 +158,11 @@ export class ThemeStudioView extends ItemView {
   }
 
   private createInput(row: HTMLElement, control: ThemeControl, value: string): void {
-    const update = (next: string): void => { setValue(this.plugin.data, control.id, this.plugin.data.mode, next); void this.saveAndRender(false); };
+    const update = (next: string): void => {
+      setValue(this.plugin.data, control.id, this.plugin.data.mode, next);
+      this.refreshLiveOutputs();
+      void this.saveAndRender(false);
+    };
     if (control.id === "custom-css") {
       const textarea = row.createEl("textarea", { cls: "theme-studio__custom-css", attr: { rows: "8", spellcheck: "false", placeholder: ".markdown-rendered strong {\n  color: var(--text-accent);\n}" } });
       textarea.value = value;
@@ -183,9 +199,10 @@ export class ThemeStudioView extends ItemView {
   private createFontPicker(row: HTMLElement, control: ThemeControl, value: string, update: (next: string) => void): void {
     const picker = row.createDiv({ cls: "theme-studio__font-picker" });
     const select = picker.createEl("select", { attr: { "aria-label": control.label } });
-    const knownValue = control.options?.some((option) => option.value === value) ?? false;
+    const options = this.fontOptions(control);
+    const knownValue = options.some((option) => option.value === value);
     if (!knownValue) select.createEl("option", { text: "Existing custom font", value });
-    control.options?.forEach((option) => {
+    options.forEach((option) => {
       const item = select.createEl("option", { text: `${option.label} — ${option.description ?? ""}`, value: option.value });
       item.style.fontFamily = option.value;
     });
@@ -195,7 +212,7 @@ export class ThemeStudioView extends ItemView {
     const sample = specimen.createDiv({ cls: "theme-studio__font-sample" });
     const explanation = specimen.createDiv({ cls: "theme-studio__font-description" });
     const refreshSpecimen = (): void => {
-      const selected = control.options?.find((option) => option.value === select.value);
+      const selected = options.find((option) => option.value === select.value);
       select.style.fontFamily = select.value;
       sample.style.fontFamily = select.value;
       sample.textContent = control.id === "font-monospace" ? "Aa 0123 { code }" : "Aa The shape of an idea";
@@ -203,6 +220,129 @@ export class ThemeStudioView extends ItemView {
     };
     refreshSpecimen();
     select.onchange = () => { refreshSpecimen(); update(select.value); };
+  }
+
+  private fontOptions(control: ThemeControl): Array<{ label: string; value: string; description?: string }> {
+    const builtIn = control.options ?? [];
+    const fallback = control.id === "font-monospace" ? "monospace" : "sans-serif";
+    const imported = this.plugin.data.systemFonts.map((family) => ({
+      label: family,
+      value: `'${family.replace(/'/g, "\\'")}', ${fallback}`,
+      description: this.describeImportedFont(family)
+    }));
+    const existing = new Set(builtIn.map((option) => option.label.toLocaleLowerCase()));
+    return [...builtIn, ...imported.filter((option) => !existing.has(option.label.toLocaleLowerCase()))];
+  }
+
+  private renderSystemFontImporter(main: HTMLElement): void {
+    const panel = main.createDiv({ cls: "theme-studio__font-importer" });
+    const copy = panel.createDiv();
+    copy.createEl("strong", { text: "Fonts on this computer" });
+    copy.createEl("p", { text: this.plugin.data.systemFonts.length
+      ? `${this.plugin.data.systemFonts.length} font families imported. They are saved only in Theme School on this device.`
+      : "Import the font families installed on this Mac or PC. Theme School records their names; it does not copy or share font files." });
+    const actions = panel.createDiv({ cls: "theme-studio__font-import-actions" });
+    const importButton = actions.createEl("button", { text: this.plugin.data.systemFonts.length ? "Refresh system fonts" : "Import system fonts" });
+    importButton.onclick = () => void this.importSystemFonts();
+    const manual = actions.createEl("input", { attr: { type: "text", placeholder: "Or enter a font family name", "aria-label": "Font family name" } });
+    const add = actions.createEl("button", { text: "Add name" });
+    add.onclick = () => void this.addFontName(manual.value);
+    manual.onkeydown = (event) => { if (event.key === "Enter") void this.addFontName(manual.value); };
+  }
+
+  private async importSystemFonts(): Promise<void> {
+    if (!Platform.isDesktopApp) {
+      new Notice("Automatic font discovery is available in the desktop app. On mobile, enter a font family name manually.", 9000);
+      return;
+    }
+    try {
+      const families = await this.discoverSystemFonts();
+      if (!families.length) throw new Error("No fonts returned");
+      this.plugin.data.systemFonts = families;
+      await this.saveAndRender();
+      new Notice(`Imported ${this.plugin.data.systemFonts.length} font families from this computer.`);
+    } catch {
+      new Notice("Theme School could not read the system font list. You can still add a font family name manually.", 9000);
+    }
+  }
+
+  private async discoverSystemFonts(): Promise<string[]> {
+    type ExecFile = (file: string, args: string[], options: { maxBuffer: number }, callback: (error: Error | null, stdout: string) => void) => void;
+    type DesktopWindow = Window & { require?: (module: string) => { execFile: ExecFile } };
+    const nodeRequire = (window as DesktopWindow).require;
+    if (!nodeRequire) throw new Error("Desktop system access is unavailable");
+    const execFile = nodeRequire("node:child_process").execFile;
+    const run = (file: string, args: string[]): Promise<string> => new Promise((resolve, reject) => {
+      execFile(file, args, { maxBuffer: 20 * 1024 * 1024 }, (error, stdout) => error ? reject(error) : resolve(stdout));
+    });
+    let families: string[];
+    if (Platform.isMacOS) {
+      type MacFontReport = { SPFontsDataType?: Array<{ typefaces?: Array<{ family?: string; enabled?: string }> }> };
+      const output = await run("/usr/sbin/system_profiler", ["SPFontsDataType", "-json", "-detailLevel", "mini"]);
+      const report = JSON.parse(output) as MacFontReport;
+      families = (report.SPFontsDataType ?? []).flatMap((font) => font.typefaces ?? [])
+        .filter((face) => face.enabled !== "no")
+        .map((face) => face.family ?? "");
+    } else if (Platform.isWin) {
+      const script = "Add-Type -AssemblyName System.Drawing; (New-Object System.Drawing.Text.InstalledFontCollection).Families.Name";
+      families = (await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script])).split(/\r?\n/);
+    } else {
+      families = (await run("fc-list", [":", "family"])).split(/\r?\n/).flatMap((line) => line.split(","));
+    }
+    return [...new Set(families.map((family) => family.trim()).filter((family) => family && !family.startsWith(".")))]
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  private describeImportedFont(family: string): string {
+    const name = family.toLocaleLowerCase();
+    const includes = (words: string[]): boolean => words.some((word) => name.includes(word));
+    if (includes(["wingdings", "webdings", "symbol", "dingbat", "ornament", "braille", "emoji"])) {
+      return "Symbols and pictograms rather than ordinary reading text";
+    }
+    if (includes(["mono", "monaco", "menlo", "courier", "andalé", "andale"])) {
+      return "Equal-width lettering suited to code, tables, and technical text";
+    }
+    if (includes(["script", "hand", "chancery", "noteworthy", "marker", "felt", "signpainter", "snell", "savoye", "zapfino", "bradley", "mishafi"])) {
+      return "Handwritten or calligraphic lettering with an informal voice";
+    }
+    if (includes(["engraved", "ransom", "party", "phosphate", "papyrus", "luminari", "herculanum", "trattatello", "chalkduster", "copperplate"])) {
+      return "Decorative display lettering best used for headings and accents";
+    }
+    if (includes(["arabic", "al bayan", "al nile", "al tarikh", "baghdad", "beirut", "damascus", "diwan", "farah", "farisi", "geeza", "kufi", "muna", "nadeem", "waseem", "naskh", "nastaliq"])) {
+      return "Designed for Arabic-script text; appearance and coverage vary by language";
+    }
+    if (includes(["hebrew", "raanana", "peninim"])) return "Designed for Hebrew text and multilingual documents";
+    if (includes(["devanagari", "bangla", "gurmukhi", "gujarati", "kannada", "malayalam", "oriya", "tamil", "telugu", "sinhala", "inai", "kailasa", "kohinoor", "shree"])) {
+      return "Designed for South Asian scripts and multilingual documents";
+    }
+    if (includes(["hiragino", "pingfang", "songti", "heiti", "stsong", "gothic neo", "myungjo", "kefa", "kokonor"])) {
+      return "Designed for East Asian scripts and multilingual documents";
+    }
+    if (includes(["khmer", "lao", "myanmar", "ayuthaya", "krungthep", "sukhumvit", "thonburi", "sathu", "silom"])) {
+      return "Designed for Southeast Asian scripts and multilingual documents";
+    }
+    if (includes(["serif", "baskerville", "bodoni", "caslon", "charter", "cochin", "didot", "hoefler", "palatino", "plantagenet", "publico", "rockwell", "times"])) {
+      return "Serif lettering with a traditional, bookish reading character";
+    }
+    if (includes(["sans", "arial", "avenir", "futura", "geneva", "helvetica", "impact", "optima", "proxima", "tahoma", "din", "lucida", "skia", "galvji"])) {
+      return "Clean sans-serif lettering suited to interfaces and everyday reading";
+    }
+    if (includes(["rounded", "comic", "chalkboard"])) return "Rounded, friendly lettering with a playful character";
+    if (includes(["condensed", "narrow"])) return "Space-saving letterforms useful for compact headings and navigation";
+    return "A locally installed font—use the specimen to judge its shape and reading feel";
+  }
+
+  private async addFontName(rawName: string): Promise<void> {
+    const name = rawName.trim();
+    if (!name) {
+      new Notice("Enter the font family name shown in the font book or your system font settings.");
+      return;
+    }
+    const names = new Set(this.plugin.data.systemFonts);
+    names.add(name);
+    this.plugin.data.systemFonts = [...names].sort((a, b) => a.localeCompare(b));
+    await this.saveAndRender();
+    new Notice(`${name} added to the font choices.`);
   }
 
   private renderContrast(card: HTMLElement): void {
@@ -217,10 +357,12 @@ export class ThemeStudioView extends ItemView {
 
   private renderPreview(workspace: HTMLElement): void {
     const aside = workspace.createEl("aside", { cls: "theme-studio__preview" });
-    const top = aside.createDiv({ cls: "theme-studio__preview-top" });
+    const pocket = aside.createDiv({ cls: "theme-studio__preview-pocket" });
+    const top = pocket.createDiv({ cls: "theme-studio__preview-top" });
     top.createEl("strong", { text: "Pocket preview" });
     top.createSpan({ text: this.plugin.data.mode === "light" ? "Light baseline" : "Dark baseline" });
-    const canvas = aside.createDiv({ cls: `theme-studio__mock theme-${this.plugin.data.mode}` });
+    const canvas = pocket.createDiv({ cls: "theme-studio__mock", attr: { "data-mode": this.plugin.data.mode } });
+    this.mockCanvas = canvas;
     this.applyMockVariables(canvas);
     const mockNav = canvas.createDiv({ cls: "theme-studio__mock-nav" });
     mockNav.createEl("b", { text: "My vault" });
@@ -238,15 +380,48 @@ export class ThemeStudioView extends ItemView {
     details.createEl("mark").appendText("important idea");
     details.appendText(", and notice what attracts your eye.");
     note.createEl("button", { text: "A primary action" });
-    const syllabus = aside.createDiv({ cls: "theme-studio__syllabus" });
-    syllabus.createEl("strong", { text: "The route off this scaffold" });
-    ["1. Make relationships visually", "2. Read the variable beside each choice", "3. Inspect your exported theme.css", "4. Add one selector in Advanced", "5. Uninstall the plugin; keep the theme"].forEach((step) => syllabus.createDiv({ text: step }));
+    this.renderCssLesson(aside);
+  }
+
+  private renderCssLesson(aside: HTMLElement): void {
+    const lesson = aside.createEl("section", { cls: `theme-studio__css-live ${this.showCss ? "is-open" : "is-closed"}` });
+    const toggle = lesson.createEl("button", {
+      cls: "theme-studio__css-toggle",
+      text: `${this.showCss ? "▾" : "▸"} Live theme code · changes as you choose`,
+      attr: { "aria-expanded": String(this.showCss) }
+    });
+    toggle.onclick = () => { this.showCss = !this.showCss; this.render(); };
+    if (!this.showCss) return;
+    const content = lesson.createDiv({ cls: "theme-studio__css-content" });
+    content.createEl("p", { text: "Coders usually use colour pickers, design tools, and browser inspectors. They do not memorise every colour code." });
+    const toolbar = content.createDiv({ cls: "theme-studio__css-toolbar" });
+    toolbar.createSpan({ text: "Your complete standalone theme.css" });
+    const copy = toolbar.createEl("button", { text: "Copy" });
+    copy.onclick = () => void this.copy(generateThemeCss(this.plugin.data), "Live theme.css copied");
+    this.cssOutput = content.createEl("code", { cls: "theme-studio__css-output" });
+    this.cssOutput.textContent = generateThemeCss(this.plugin.data);
+  }
+
+  private renderInstallHelp(aside: HTMLElement): void {
+    const help = aside.createEl("details", { cls: "theme-studio__install-help" });
+    help.createEl("summary", { text: "How to load my exported theme" });
+    const list = help.createEl("ol");
+    list.createEl("li", { text: "Export → create theme folder in this vault." });
+    list.createEl("li", { text: "Open settings → appearance." });
+    list.createEl("li", { text: "Restart the app so it discovers the new theme folder." });
+    list.createEl("li", { text: "Choose your theme name from the themes dropdown." });
+    help.createEl("p", { text: "The exported folder contains both theme.css and manifest.json and has the same name as your theme." });
   }
 
   private applyMockVariables(canvas: HTMLElement): void {
     CONTROLS.filter((control) => control.cssVar).forEach((control) => {
       canvas.style.setProperty(control.cssVar, getValue(this.plugin.data, control.id, this.plugin.data.mode));
     });
+  }
+
+  private refreshLiveOutputs(): void {
+    if (this.mockCanvas) this.applyMockVariables(this.mockCanvas);
+    if (this.cssOutput) this.cssOutput.textContent = generateThemeCss(this.plugin.data);
   }
 
   private modeButton(parent: HTMLElement, icon: string, label: string, mode: Mode): void {
@@ -273,20 +448,18 @@ export class ThemeStudioView extends ItemView {
   }
 
   private async exportToVault(): Promise<void> {
-    const slug = (this.plugin.data.themeName || "my-theme").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const folderName = (this.plugin.data.themeName.trim() || "Untitled Theme")
+      .replace(/[\\/:*?"<>|]/g, "-")
+      .replace(/\s+/g, " ")
+      .replace(/^\.+|\.+$/g, "") || "Untitled Theme";
     const themesFolder = `${this.app.vault.configDir}/themes`;
-    let folder = `${themesFolder}/${slug}`;
+    const folder = `${themesFolder}/${folderName}`;
     const adapter = this.app.vault.adapter;
-    if (await adapter.exists(folder)) {
-      let suffix = 2;
-      while (await adapter.exists(`${folder}-${suffix}`)) suffix += 1;
-      folder = `${folder}-${suffix}`;
-    }
     if (!(await adapter.exists(themesFolder))) await adapter.mkdir(themesFolder);
-    await adapter.mkdir(folder);
+    if (!(await adapter.exists(folder))) await adapter.mkdir(folder);
     await adapter.write(`${folder}/theme.css`, generateThemeCss(this.plugin.data));
     await adapter.write(`${folder}/manifest.json`, generateThemeManifest(this.plugin.data));
-    new Notice(`Standalone theme created in ${folder}. Reload themes in Appearance to use it.`);
+    new Notice(`Theme saved in ${folder}. Restart Obsidian, then select “${this.plugin.data.themeName || "My First Theme"}” in settings → appearance → themes.`, 12000);
   }
 
   private async copy(content: string, message: string): Promise<void> {

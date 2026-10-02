@@ -34,6 +34,10 @@ var TEXT_FONTS = [
   { label: "Trebuchet MS", value: "'Trebuchet MS', sans-serif", description: "Friendly with a little personality" },
   { label: "Avenir Next", value: "'Avenir Next', Avenir, sans-serif", description: "Geometric and polished; mainly Apple devices" },
   { label: "Gill Sans", value: "'Gill Sans', 'Gill Sans MT', sans-serif", description: "Humanist and elegant; availability varies" },
+  { label: "Chalkboard SE", value: "'Chalkboard SE', Chalkboard, cursive", description: "Friendly handwritten lettering included with macOS" },
+  { label: "Chalkboard", value: "Chalkboard, 'Chalkboard SE', cursive", description: "The original macOS chalk-style family" },
+  { label: "Dreaming Outloud Pro", value: "'Dreaming Outloud Pro', 'Chalkboard SE', cursive", description: "Microsoft 365 cloud font; must also be available to Obsidian" },
+  { label: "Dreaming Outloud Script Pro", value: "'Dreaming Outloud Script Pro', 'Dreaming Outloud Pro', 'Chalkboard SE', cursive", description: "Microsoft 365 script font; must also be available to Obsidian" },
   { label: "Atkinson Hyperlegible", value: "'Atkinson Hyperlegible', Arial, sans-serif", description: "Accessibility-focused; must be installed" },
   { label: "Georgia", value: "Georgia, serif", description: "Warm, sturdy, and designed for screens" },
   { label: "Palatino", value: "Palatino, 'Palatino Linotype', serif", description: "Bookish and spacious" },
@@ -61,9 +65,9 @@ var CONTROLS = [
   { id: "border", label: "Borders", category: "Colour", cssVar: "--background-modifier-border", kind: "color", description: "Dividers, outlines, and panel boundaries.", lesson: "Borders are structural punctuation. Low contrast makes a soft theme; higher contrast makes a technical, explicit one.", defaultLight: "#e0e0e0", defaultDark: "#3f3f3f" },
   { id: "highlight", label: "Highlight", category: "Colour", cssVar: "--text-highlight-bg", kind: "color", description: "The background of ==highlighted text==.", lesson: "Highlights should be visible behind body text without reducing its contrast.", defaultLight: "#fff3a3", defaultDark: "#5c5323" },
   { id: "selection", label: "Text selection", category: "Colour", cssVar: "--text-selection", kind: "color", description: "The colour shown while selecting text.", lesson: "Selection is temporary state. Make it obvious, but not so opaque that selected words disappear.", defaultLight: "#cfe2ff", defaultDark: "#364c70" },
-  { id: "font-interface", label: "Interface font", category: "Typography", cssVar: "--font-interface-theme", kind: "font", description: "Choose the typeface used for buttons, tabs, and navigation.", lesson: "The dropdown writes the font stack for you. System default is the safest shared-theme choice; fonts marked \u2018must be installed\u2019 fall back when another reader does not have them.", defaultLight: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", scope: "shared", options: TEXT_FONTS },
-  { id: "font-text", label: "Reading font", category: "Typography", cssVar: "--font-text-theme", kind: "font", description: "Choose the typeface used in notes and reading view.", lesson: "Serifs can feel bookish and guide the eye through long prose; sans serifs often feel cleaner and more direct. Choose by reading the specimen, not by memorising names.", defaultLight: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", scope: "shared", options: TEXT_FONTS },
-  { id: "font-monospace", label: "Code font", category: "Typography", cssVar: "--font-monospace-theme", kind: "font", description: "Choose an equal-width typeface for code blocks and inline code.", lesson: "Every character in a monospace font occupies equal width. That alignment makes code structure easier to scan; the dropdown keeps a monospace fallback automatically.", defaultLight: "'SFMono-Regular', Consolas, 'Liberation Mono', monospace", scope: "shared", options: CODE_FONTS },
+  { id: "font-interface", label: "Interface font", category: "Typography", cssVar: "--font-interface-override", kind: "font", description: "Choose the typeface used for buttons, tabs, and navigation, overriding the font selected in Obsidian Appearance.", lesson: "The dropdown writes the font stack for you. System default is the safest shared-theme choice; fonts marked \u2018must be installed\u2019 fall back when another reader does not have them.", defaultLight: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", scope: "shared", options: TEXT_FONTS },
+  { id: "font-text", label: "Reading font", category: "Typography", cssVar: "--font-text-override", kind: "font", description: "Choose the typeface used in notes and reading view, overriding the font selected in Obsidian Appearance.", lesson: "Serifs can feel bookish and guide the eye through long prose; sans serifs often feel cleaner and more direct. Choose by reading the specimen, not by memorising names.", defaultLight: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", scope: "shared", options: TEXT_FONTS },
+  { id: "font-monospace", label: "Code font", category: "Typography", cssVar: "--font-monospace-override", kind: "font", description: "Choose an equal-width typeface for code blocks and inline code, overriding the font selected in Obsidian Appearance.", lesson: "Every character in a monospace font occupies equal width. That alignment makes code structure easier to scan; the dropdown keeps a monospace fallback automatically.", defaultLight: "'SFMono-Regular', Consolas, 'Liberation Mono', monospace", scope: "shared", options: CODE_FONTS },
   { id: "font-size", label: "Base text size", category: "Typography", cssVar: "--font-text-size", kind: "range", description: "The default reading size in pixels.", lesson: "This is a root design decision: line length, spacing, and headings all feel different when body size changes.", defaultLight: "16px", scope: "shared", min: 13, max: 22, step: 1, unit: "px" },
   { id: "line-height", label: "Reading line height", category: "Typography", cssVar: "--line-height-normal", kind: "range", description: "Vertical breathing room between lines.", lesson: "Long-form reading usually benefits from 1.5\u20131.8. Dense interfaces can be tighter.", defaultLight: "1.6", scope: "shared", min: 1.2, max: 2, step: 0.05 },
   { id: "heading-weight", label: "Heading weight", category: "Typography", cssVar: "--heading-weight", kind: "range", description: "Boldness shared by note headings.", lesson: "Weight builds hierarchy without changing colour. Values depend on what the selected font actually supports.", defaultLight: "700", scope: "shared", min: 400, max: 900, step: 100 },
@@ -110,6 +114,7 @@ var DEFAULT_DATA = {
   author: "",
   mode: "light",
   livePreview: true,
+  systemFonts: [],
   values: { light: {}, dark: {}, shared: {}, customCss: "" }
 };
 function cloneDefaults() {
@@ -122,6 +127,7 @@ function mergeData(raw) {
   return {
     ...defaults,
     ...raw,
+    systemFonts: Array.isArray(raw.systemFonts) ? raw.systemFonts.filter((font) => typeof font === "string") : [],
     values: {
       light: { ...defaults.values.light, ...(_a = raw.values) == null ? void 0 : _a.light },
       dark: { ...defaults.values.dark, ...(_b = raw.values) == null ? void 0 : _b.dark },
@@ -213,6 +219,9 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
     this.category = "Colour";
     this.search = "";
     this.showLessons = true;
+    this.showCss = true;
+    this.mockCanvas = null;
+    this.cssOutput = null;
     this.plugin = plugin;
   }
   getViewType() {
@@ -323,18 +332,27 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
       this.render();
     };
     lessonToggle.createSpan({ text: "Show teaching notes" });
-    const reset = sidebar.createEl("button", { cls: "theme-studio__reset", text: "Reset the whole experiment" });
+    const reset = sidebar.createEl("button", { cls: "theme-studio__reset", text: "Start with a blank slate" });
     reset.onclick = () => {
-      this.plugin.data = { ...cloneDefaults(), author: this.plugin.data.author };
+      this.plugin.data = { ...cloneDefaults(), author: this.plugin.data.author, systemFonts: this.plugin.data.systemFonts };
       void this.saveAndRender();
-      new import_obsidian.Notice("Theme School reset to the default palette");
+      new import_obsidian.Notice("Theme School is back to its neutral starting point. To remove an installed theme too, choose default in settings \u2192 appearance \u2192 themes.", 9e3);
     };
+    sidebar.createEl("p", {
+      cls: "theme-studio__reset-note",
+      text: "This clears your Theme School choices. For a completely clean canvas, also select default under settings \u2192 appearance \u2192 themes."
+    });
+    this.renderInstallHelp(sidebar);
+    const syllabus = sidebar.createDiv({ cls: "theme-studio__syllabus" });
+    syllabus.createEl("strong", { text: "The route off this scaffold" });
+    ["1. Make relationships visually", "2. Read the variable beside each choice", "3. Inspect your exported theme.css", "4. Add one selector in Advanced", "5. Uninstall the plugin; keep the theme"].forEach((step) => syllabus.createDiv({ text: step }));
   }
   renderControls(workspace) {
     const main = workspace.createEl("main", { cls: "theme-studio__controls" });
     const intro = main.createDiv({ cls: "theme-studio__section-intro" });
     intro.createEl("h2", { text: this.search ? `Results for \u201C${this.search}\u201D` : this.category });
     intro.createEl("p", { text: this.categoryIntro(this.category) });
+    if (!this.search && this.category === "Typography") this.renderSystemFontImporter(main);
     const query = this.search.toLowerCase();
     const controls = CONTROLS.filter((control) => query ? `${control.label} ${control.description} ${control.lesson} ${control.cssVar}`.toLowerCase().includes(query) : control.category === this.category);
     if (!controls.length) main.createEl("p", { cls: "theme-studio__empty", text: "No controls match that search." });
@@ -362,6 +380,7 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
     var _a;
     const update = (next) => {
       setValue(this.plugin.data, control.id, this.plugin.data.mode, next);
+      this.refreshLiveOutputs();
       void this.saveAndRender(false);
     };
     if (control.id === "custom-css") {
@@ -405,14 +424,14 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
     }
   }
   createFontPicker(row, control, value, update) {
-    var _a, _b, _c;
     const picker = row.createDiv({ cls: "theme-studio__font-picker" });
     const select = picker.createEl("select", { attr: { "aria-label": control.label } });
-    const knownValue = (_b = (_a = control.options) == null ? void 0 : _a.some((option) => option.value === value)) != null ? _b : false;
+    const options = this.fontOptions(control);
+    const knownValue = options.some((option) => option.value === value);
     if (!knownValue) select.createEl("option", { text: "Existing custom font", value });
-    (_c = control.options) == null ? void 0 : _c.forEach((option) => {
-      var _a2;
-      const item = select.createEl("option", { text: `${option.label} \u2014 ${(_a2 = option.description) != null ? _a2 : ""}`, value: option.value });
+    options.forEach((option) => {
+      var _a;
+      const item = select.createEl("option", { text: `${option.label} \u2014 ${(_a = option.description) != null ? _a : ""}`, value: option.value });
       item.style.fontFamily = option.value;
     });
     select.value = value;
@@ -420,18 +439,137 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
     const sample = specimen.createDiv({ cls: "theme-studio__font-sample" });
     const explanation = specimen.createDiv({ cls: "theme-studio__font-description" });
     const refreshSpecimen = () => {
-      var _a2, _b2;
-      const selected = (_a2 = control.options) == null ? void 0 : _a2.find((option) => option.value === select.value);
+      var _a;
+      const selected = options.find((option) => option.value === select.value);
       select.style.fontFamily = select.value;
       sample.style.fontFamily = select.value;
       sample.textContent = control.id === "font-monospace" ? "Aa 0123 { code }" : "Aa The shape of an idea";
-      explanation.textContent = (_b2 = selected == null ? void 0 : selected.description) != null ? _b2 : "A custom font choice saved by an earlier version";
+      explanation.textContent = (_a = selected == null ? void 0 : selected.description) != null ? _a : "A custom font choice saved by an earlier version";
     };
     refreshSpecimen();
     select.onchange = () => {
       refreshSpecimen();
       update(select.value);
     };
+  }
+  fontOptions(control) {
+    var _a;
+    const builtIn = (_a = control.options) != null ? _a : [];
+    const fallback = control.id === "font-monospace" ? "monospace" : "sans-serif";
+    const imported = this.plugin.data.systemFonts.map((family) => ({
+      label: family,
+      value: `'${family.replace(/'/g, "\\'")}', ${fallback}`,
+      description: this.describeImportedFont(family)
+    }));
+    const existing = new Set(builtIn.map((option) => option.label.toLocaleLowerCase()));
+    return [...builtIn, ...imported.filter((option) => !existing.has(option.label.toLocaleLowerCase()))];
+  }
+  renderSystemFontImporter(main) {
+    const panel = main.createDiv({ cls: "theme-studio__font-importer" });
+    const copy = panel.createDiv();
+    copy.createEl("strong", { text: "Fonts on this computer" });
+    copy.createEl("p", { text: this.plugin.data.systemFonts.length ? `${this.plugin.data.systemFonts.length} font families imported. They are saved only in Theme School on this device.` : "Import the font families installed on this Mac or PC. Theme School records their names; it does not copy or share font files." });
+    const actions = panel.createDiv({ cls: "theme-studio__font-import-actions" });
+    const importButton = actions.createEl("button", { text: this.plugin.data.systemFonts.length ? "Refresh system fonts" : "Import system fonts" });
+    importButton.onclick = () => void this.importSystemFonts();
+    const manual = actions.createEl("input", { attr: { type: "text", placeholder: "Or enter a font family name", "aria-label": "Font family name" } });
+    const add = actions.createEl("button", { text: "Add name" });
+    add.onclick = () => void this.addFontName(manual.value);
+    manual.onkeydown = (event) => {
+      if (event.key === "Enter") void this.addFontName(manual.value);
+    };
+  }
+  async importSystemFonts() {
+    if (!import_obsidian.Platform.isDesktopApp) {
+      new import_obsidian.Notice("Automatic font discovery is available in the desktop app. On mobile, enter a font family name manually.", 9e3);
+      return;
+    }
+    try {
+      const families = await this.discoverSystemFonts();
+      if (!families.length) throw new Error("No fonts returned");
+      this.plugin.data.systemFonts = families;
+      await this.saveAndRender();
+      new import_obsidian.Notice(`Imported ${this.plugin.data.systemFonts.length} font families from this computer.`);
+    } catch (e) {
+      new import_obsidian.Notice("Theme School could not read the system font list. You can still add a font family name manually.", 9e3);
+    }
+  }
+  async discoverSystemFonts() {
+    var _a;
+    const nodeRequire = window.require;
+    if (!nodeRequire) throw new Error("Desktop system access is unavailable");
+    const execFile = nodeRequire("node:child_process").execFile;
+    const run = (file, args) => new Promise((resolve, reject) => {
+      execFile(file, args, { maxBuffer: 20 * 1024 * 1024 }, (error, stdout) => error ? reject(error) : resolve(stdout));
+    });
+    let families;
+    if (import_obsidian.Platform.isMacOS) {
+      const output = await run("/usr/sbin/system_profiler", ["SPFontsDataType", "-json", "-detailLevel", "mini"]);
+      const report = JSON.parse(output);
+      families = ((_a = report.SPFontsDataType) != null ? _a : []).flatMap((font) => {
+        var _a2;
+        return (_a2 = font.typefaces) != null ? _a2 : [];
+      }).filter((face) => face.enabled !== "no").map((face) => {
+        var _a2;
+        return (_a2 = face.family) != null ? _a2 : "";
+      });
+    } else if (import_obsidian.Platform.isWin) {
+      const script = "Add-Type -AssemblyName System.Drawing; (New-Object System.Drawing.Text.InstalledFontCollection).Families.Name";
+      families = (await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script])).split(/\r?\n/);
+    } else {
+      families = (await run("fc-list", [":", "family"])).split(/\r?\n/).flatMap((line) => line.split(","));
+    }
+    return [...new Set(families.map((family) => family.trim()).filter((family) => family && !family.startsWith(".")))].sort((a, b) => a.localeCompare(b));
+  }
+  describeImportedFont(family) {
+    const name = family.toLocaleLowerCase();
+    const includes = (words) => words.some((word) => name.includes(word));
+    if (includes(["wingdings", "webdings", "symbol", "dingbat", "ornament", "braille", "emoji"])) {
+      return "Symbols and pictograms rather than ordinary reading text";
+    }
+    if (includes(["mono", "monaco", "menlo", "courier", "andal\xE9", "andale"])) {
+      return "Equal-width lettering suited to code, tables, and technical text";
+    }
+    if (includes(["script", "hand", "chancery", "noteworthy", "marker", "felt", "signpainter", "snell", "savoye", "zapfino", "bradley", "mishafi"])) {
+      return "Handwritten or calligraphic lettering with an informal voice";
+    }
+    if (includes(["engraved", "ransom", "party", "phosphate", "papyrus", "luminari", "herculanum", "trattatello", "chalkduster", "copperplate"])) {
+      return "Decorative display lettering best used for headings and accents";
+    }
+    if (includes(["arabic", "al bayan", "al nile", "al tarikh", "baghdad", "beirut", "damascus", "diwan", "farah", "farisi", "geeza", "kufi", "muna", "nadeem", "waseem", "naskh", "nastaliq"])) {
+      return "Designed for Arabic-script text; appearance and coverage vary by language";
+    }
+    if (includes(["hebrew", "raanana", "peninim"])) return "Designed for Hebrew text and multilingual documents";
+    if (includes(["devanagari", "bangla", "gurmukhi", "gujarati", "kannada", "malayalam", "oriya", "tamil", "telugu", "sinhala", "inai", "kailasa", "kohinoor", "shree"])) {
+      return "Designed for South Asian scripts and multilingual documents";
+    }
+    if (includes(["hiragino", "pingfang", "songti", "heiti", "stsong", "gothic neo", "myungjo", "kefa", "kokonor"])) {
+      return "Designed for East Asian scripts and multilingual documents";
+    }
+    if (includes(["khmer", "lao", "myanmar", "ayuthaya", "krungthep", "sukhumvit", "thonburi", "sathu", "silom"])) {
+      return "Designed for Southeast Asian scripts and multilingual documents";
+    }
+    if (includes(["serif", "baskerville", "bodoni", "caslon", "charter", "cochin", "didot", "hoefler", "palatino", "plantagenet", "publico", "rockwell", "times"])) {
+      return "Serif lettering with a traditional, bookish reading character";
+    }
+    if (includes(["sans", "arial", "avenir", "futura", "geneva", "helvetica", "impact", "optima", "proxima", "tahoma", "din", "lucida", "skia", "galvji"])) {
+      return "Clean sans-serif lettering suited to interfaces and everyday reading";
+    }
+    if (includes(["rounded", "comic", "chalkboard"])) return "Rounded, friendly lettering with a playful character";
+    if (includes(["condensed", "narrow"])) return "Space-saving letterforms useful for compact headings and navigation";
+    return "A locally installed font\u2014use the specimen to judge its shape and reading feel";
+  }
+  async addFontName(rawName) {
+    const name = rawName.trim();
+    if (!name) {
+      new import_obsidian.Notice("Enter the font family name shown in the font book or your system font settings.");
+      return;
+    }
+    const names = new Set(this.plugin.data.systemFonts);
+    names.add(name);
+    this.plugin.data.systemFonts = [...names].sort((a, b) => a.localeCompare(b));
+    await this.saveAndRender();
+    new import_obsidian.Notice(`${name} added to the font choices.`);
   }
   renderContrast(card) {
     const mode = this.plugin.data.mode;
@@ -444,10 +582,12 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
   }
   renderPreview(workspace) {
     const aside = workspace.createEl("aside", { cls: "theme-studio__preview" });
-    const top = aside.createDiv({ cls: "theme-studio__preview-top" });
+    const pocket = aside.createDiv({ cls: "theme-studio__preview-pocket" });
+    const top = pocket.createDiv({ cls: "theme-studio__preview-top" });
     top.createEl("strong", { text: "Pocket preview" });
     top.createSpan({ text: this.plugin.data.mode === "light" ? "Light baseline" : "Dark baseline" });
-    const canvas = aside.createDiv({ cls: `theme-studio__mock theme-${this.plugin.data.mode}` });
+    const canvas = pocket.createDiv({ cls: "theme-studio__mock", attr: { "data-mode": this.plugin.data.mode } });
+    this.mockCanvas = canvas;
     this.applyMockVariables(canvas);
     const mockNav = canvas.createDiv({ cls: "theme-studio__mock-nav" });
     mockNav.createEl("b", { text: "My vault" });
@@ -465,14 +605,47 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
     details.createEl("mark").appendText("important idea");
     details.appendText(", and notice what attracts your eye.");
     note.createEl("button", { text: "A primary action" });
-    const syllabus = aside.createDiv({ cls: "theme-studio__syllabus" });
-    syllabus.createEl("strong", { text: "The route off this scaffold" });
-    ["1. Make relationships visually", "2. Read the variable beside each choice", "3. Inspect your exported theme.css", "4. Add one selector in Advanced", "5. Uninstall the plugin; keep the theme"].forEach((step) => syllabus.createDiv({ text: step }));
+    this.renderCssLesson(aside);
+  }
+  renderCssLesson(aside) {
+    const lesson = aside.createEl("section", { cls: `theme-studio__css-live ${this.showCss ? "is-open" : "is-closed"}` });
+    const toggle = lesson.createEl("button", {
+      cls: "theme-studio__css-toggle",
+      text: `${this.showCss ? "\u25BE" : "\u25B8"} Live theme code \xB7 changes as you choose`,
+      attr: { "aria-expanded": String(this.showCss) }
+    });
+    toggle.onclick = () => {
+      this.showCss = !this.showCss;
+      this.render();
+    };
+    if (!this.showCss) return;
+    const content = lesson.createDiv({ cls: "theme-studio__css-content" });
+    content.createEl("p", { text: "Coders usually use colour pickers, design tools, and browser inspectors. They do not memorise every colour code." });
+    const toolbar = content.createDiv({ cls: "theme-studio__css-toolbar" });
+    toolbar.createSpan({ text: "Your complete standalone theme.css" });
+    const copy = toolbar.createEl("button", { text: "Copy" });
+    copy.onclick = () => void this.copy(generateThemeCss(this.plugin.data), "Live theme.css copied");
+    this.cssOutput = content.createEl("code", { cls: "theme-studio__css-output" });
+    this.cssOutput.textContent = generateThemeCss(this.plugin.data);
+  }
+  renderInstallHelp(aside) {
+    const help = aside.createEl("details", { cls: "theme-studio__install-help" });
+    help.createEl("summary", { text: "How to load my exported theme" });
+    const list = help.createEl("ol");
+    list.createEl("li", { text: "Export \u2192 create theme folder in this vault." });
+    list.createEl("li", { text: "Open settings \u2192 appearance." });
+    list.createEl("li", { text: "Restart the app so it discovers the new theme folder." });
+    list.createEl("li", { text: "Choose your theme name from the themes dropdown." });
+    help.createEl("p", { text: "The exported folder contains both theme.css and manifest.json and has the same name as your theme." });
   }
   applyMockVariables(canvas) {
     CONTROLS.filter((control) => control.cssVar).forEach((control) => {
       canvas.style.setProperty(control.cssVar, getValue(this.plugin.data, control.id, this.plugin.data.mode));
     });
+  }
+  refreshLiveOutputs() {
+    if (this.mockCanvas) this.applyMockVariables(this.mockCanvas);
+    if (this.cssOutput) this.cssOutput.textContent = generateThemeCss(this.plugin.data);
   }
   modeButton(parent, icon, label, mode) {
     const button = parent.createEl("button", { cls: this.plugin.data.mode === mode ? "is-active" : "" });
@@ -498,20 +671,15 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
     menu.showAtMouseEvent(event);
   }
   async exportToVault() {
-    const slug = (this.plugin.data.themeName || "my-theme").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const folderName = (this.plugin.data.themeName.trim() || "Untitled Theme").replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").replace(/^\.+|\.+$/g, "") || "Untitled Theme";
     const themesFolder = `${this.app.vault.configDir}/themes`;
-    let folder = `${themesFolder}/${slug}`;
+    const folder = `${themesFolder}/${folderName}`;
     const adapter = this.app.vault.adapter;
-    if (await adapter.exists(folder)) {
-      let suffix = 2;
-      while (await adapter.exists(`${folder}-${suffix}`)) suffix += 1;
-      folder = `${folder}-${suffix}`;
-    }
     if (!await adapter.exists(themesFolder)) await adapter.mkdir(themesFolder);
-    await adapter.mkdir(folder);
+    if (!await adapter.exists(folder)) await adapter.mkdir(folder);
     await adapter.write(`${folder}/theme.css`, generateThemeCss(this.plugin.data));
     await adapter.write(`${folder}/manifest.json`, generateThemeManifest(this.plugin.data));
-    new import_obsidian.Notice(`Standalone theme created in ${folder}. Reload themes in Appearance to use it.`);
+    new import_obsidian.Notice(`Theme saved in ${folder}. Restart Obsidian, then select \u201C${this.plugin.data.themeName || "My First Theme"}\u201D in settings \u2192 appearance \u2192 themes.`, 12e3);
   }
   async copy(content, message) {
     await navigator.clipboard.writeText(content);

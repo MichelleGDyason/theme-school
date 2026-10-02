@@ -6,6 +6,7 @@ export const DEFAULT_DATA: StudioData = {
   author: "",
   mode: "light",
   livePreview: true,
+  systemFonts: [],
   values: { light: {}, dark: {}, shared: {}, customCss: "" }
 };
 
@@ -19,6 +20,7 @@ export function mergeData(raw: Partial<StudioData> | null): StudioData {
   return {
     ...defaults,
     ...raw,
+    systemFonts: Array.isArray(raw.systemFonts) ? raw.systemFonts.filter((font): font is string => typeof font === "string") : [],
     values: {
       light: { ...defaults.values.light, ...raw.values?.light },
       dark: { ...defaults.values.dark, ...raw.values?.dark },

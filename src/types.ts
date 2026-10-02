@@ -14,6 +14,7 @@ export interface StudioData {
   author: string;
   mode: Mode;
   livePreview: boolean;
+  systemFonts: string[];
   values: ThemeValueSet;
 }
 
