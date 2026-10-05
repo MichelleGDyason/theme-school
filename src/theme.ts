@@ -11,7 +11,16 @@ export const DEFAULT_DATA: StudioData = {
 };
 
 export function cloneDefaults(): StudioData {
-  return JSON.parse(JSON.stringify(DEFAULT_DATA)) as StudioData;
+  return {
+    ...DEFAULT_DATA,
+    systemFonts: [...DEFAULT_DATA.systemFonts],
+    values: {
+      light: { ...DEFAULT_DATA.values.light },
+      dark: { ...DEFAULT_DATA.values.dark },
+      shared: { ...DEFAULT_DATA.values.shared },
+      customCss: DEFAULT_DATA.values.customCss
+    }
+  };
 }
 
 export function mergeData(raw: Partial<StudioData> | null): StudioData {

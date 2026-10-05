@@ -1,31 +1,21 @@
-# Theme School 0.2.0
+# Theme School 0.2.1
 
-Theme School 0.2.0 makes the design studio easier to learn from, easier to keep in view, and much more useful for typography.
+Theme School 0.2.1 is a review-quality patch for the new live design and system-font features introduced in 0.2.0.
 
-## Live design workspace
+## Review improvements
 
-- Added a live, copyable view of the complete CSS Theme School is writing.
-- Kept the pocket preview and live theme code visible while the controls scroll independently.
-- Gave the pocket preview and live code their own practical scrolling areas.
-- Made the pocket preview update immediately as selections change.
-- Added **Start with a blank slate** for clearing saved Theme School choices.
+- Replaced loosely typed system-font discovery boundaries with explicit runtime validation.
+- Removed JSON cloning and validated the macOS font report before using any values.
+- Added GitHub build-provenance attestations for `main.js`, `manifest.json`, and `styles.css`.
+- Kept the Copy buttons because they only write Theme School's generated CSS or manifest after you deliberately click them; the plugin never reads clipboard contents.
 
-## Export and loading
+## Included from 0.2.0
 
-- Corrected exported theme folder naming so Obsidian can discover the theme.
-- Added safer repeat exports that update the same theme folder.
-- Added clearer in-app and README instructions for restarting Obsidian and selecting the exported theme under Appearance.
-
-## Typography
-
-- Theme School now uses Obsidian's font override variables so its font choices take precedence in the live design.
-- Added Chalkboard and Dreaming Outloud choices with sensible fallbacks.
-- Added local system-font discovery for macOS, Windows, and Linux.
-- Added manual font-name entry for mobile and restricted environments.
-- Added generated plain-language descriptions and visual specimens for imported fonts.
-- Kept font discovery private: only installed family names are read locally; font files are never uploaded, copied, or bundled.
+- Live, copyable theme CSS and a responsive pocket preview with independent scrolling.
+- A blank-slate reset and corrected standalone-theme folder export.
+- Font overrides, Chalkboard and Dreaming Outloud choices, local system-font discovery, manual font entry, specimens, and plain-language font descriptions.
 
 ## Verification
 
-- Built and checked with TypeScript and the Obsidian ESLint rules.
-- Tested in Obsidian on macOS with imported system fonts and live font previews.
+- TypeScript checks, type-aware safety rules, Obsidian lint, and the production build pass.
+- The release workflow creates attestations before publishing the three installable assets.

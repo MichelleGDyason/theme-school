@@ -6,6 +6,17 @@ import type { Category, Mode, ThemeControl } from "./types";
 
 export const VIEW_TYPE_THEME_STUDIO = "theme-school-view";
 
+type ExecFile = (
+  file: string,
+  args: string[],
+  options: { maxBuffer: number },
+  callback: (error: unknown, stdout: unknown) => void
+) => void;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 export class ThemeStudioView extends ItemView {
   private plugin: ThemeStudioPlugin;
   private category: Category = "Colour";
@@ -267,22 +278,41 @@ export class ThemeStudioView extends ItemView {
   }
 
   private async discoverSystemFonts(): Promise<string[]> {
-    type ExecFile = (file: string, args: string[], options: { maxBuffer: number }, callback: (error: Error | null, stdout: string) => void) => void;
-    type DesktopWindow = Window & { require?: (module: string) => { execFile: ExecFile } };
-    const nodeRequire = (window as DesktopWindow).require;
-    if (!nodeRequire) throw new Error("Desktop system access is unavailable");
-    const execFile = nodeRequire("node:child_process").execFile;
+    const windowValue: unknown = window;
+    if (!isRecord(windowValue)) throw new Error("Desktop window is unavailable");
+    const requireValue = windowValue.require;
+    if (typeof requireValue !== "function") throw new Error("Desktop system access is unavailable");
+    const requireModule = requireValue as (module: string) => unknown;
+    const childProcess = requireModule("node:child_process");
+    if (!isRecord(childProcess) || typeof childProcess.execFile !== "function") {
+      throw new Error("Desktop process access is unavailable");
+    }
+    const execFile = childProcess.execFile as ExecFile;
     const run = (file: string, args: string[]): Promise<string> => new Promise((resolve, reject) => {
-      execFile(file, args, { maxBuffer: 20 * 1024 * 1024 }, (error, stdout) => error ? reject(error) : resolve(stdout));
+      execFile(file, args, { maxBuffer: 20 * 1024 * 1024 }, (error, stdout) => {
+        if (error) {
+          reject(error instanceof Error ? error : new Error("System font discovery failed"));
+        } else if (typeof stdout === "string") {
+          resolve(stdout);
+        } else {
+          reject(new Error("System font discovery returned invalid output"));
+        }
+      });
     });
     let families: string[];
     if (Platform.isMacOS) {
-      type MacFontReport = { SPFontsDataType?: Array<{ typefaces?: Array<{ family?: string; enabled?: string }> }> };
       const output = await run("/usr/sbin/system_profiler", ["SPFontsDataType", "-json", "-detailLevel", "mini"]);
-      const report = JSON.parse(output) as MacFontReport;
-      families = (report.SPFontsDataType ?? []).flatMap((font) => font.typefaces ?? [])
-        .filter((face) => face.enabled !== "no")
-        .map((face) => face.family ?? "");
+      const report: unknown = JSON.parse(output);
+      if (!isRecord(report) || !Array.isArray(report.SPFontsDataType)) {
+        throw new Error("System font report has an unexpected format");
+      }
+      families = report.SPFontsDataType.flatMap((font: unknown) => {
+        if (!isRecord(font) || !Array.isArray(font.typefaces)) return [];
+        return font.typefaces.flatMap((face: unknown) => {
+          if (!isRecord(face) || face.enabled === "no" || typeof face.family !== "string") return [];
+          return [face.family];
+        });
+      });
     } else if (Platform.isWin) {
       const script = "Add-Type -AssemblyName System.Drawing; (New-Object System.Drawing.Text.InstalledFontCollection).Families.Name";
       families = (await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script])).split(/\r?\n/);

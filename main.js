@@ -118,7 +118,16 @@ var DEFAULT_DATA = {
   values: { light: {}, dark: {}, shared: {}, customCss: "" }
 };
 function cloneDefaults() {
-  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+  return {
+    ...DEFAULT_DATA,
+    systemFonts: [...DEFAULT_DATA.systemFonts],
+    values: {
+      light: { ...DEFAULT_DATA.values.light },
+      dark: { ...DEFAULT_DATA.values.dark },
+      shared: { ...DEFAULT_DATA.values.shared },
+      customCss: DEFAULT_DATA.values.customCss
+    }
+  };
 }
 function mergeData(raw) {
   var _a, _b, _c, _d, _e;
@@ -213,6 +222,9 @@ function contrastRatio(foreground, background) {
 
 // src/view.ts
 var VIEW_TYPE_THEME_STUDIO = "theme-school-view";
+function isRecord(value) {
+  return typeof value === "object" && value !== null;
+}
 var ThemeStudioView = class extends import_obsidian.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
@@ -495,23 +507,40 @@ var ThemeStudioView = class extends import_obsidian.ItemView {
     }
   }
   async discoverSystemFonts() {
-    var _a;
-    const nodeRequire = window.require;
-    if (!nodeRequire) throw new Error("Desktop system access is unavailable");
-    const execFile = nodeRequire("node:child_process").execFile;
+    const windowValue = window;
+    if (!isRecord(windowValue)) throw new Error("Desktop window is unavailable");
+    const requireValue = windowValue.require;
+    if (typeof requireValue !== "function") throw new Error("Desktop system access is unavailable");
+    const requireModule = requireValue;
+    const childProcess = requireModule("node:child_process");
+    if (!isRecord(childProcess) || typeof childProcess.execFile !== "function") {
+      throw new Error("Desktop process access is unavailable");
+    }
+    const execFile = childProcess.execFile;
     const run = (file, args) => new Promise((resolve, reject) => {
-      execFile(file, args, { maxBuffer: 20 * 1024 * 1024 }, (error, stdout) => error ? reject(error) : resolve(stdout));
+      execFile(file, args, { maxBuffer: 20 * 1024 * 1024 }, (error, stdout) => {
+        if (error) {
+          reject(error instanceof Error ? error : new Error("System font discovery failed"));
+        } else if (typeof stdout === "string") {
+          resolve(stdout);
+        } else {
+          reject(new Error("System font discovery returned invalid output"));
+        }
+      });
     });
     let families;
     if (import_obsidian.Platform.isMacOS) {
       const output = await run("/usr/sbin/system_profiler", ["SPFontsDataType", "-json", "-detailLevel", "mini"]);
       const report = JSON.parse(output);
-      families = ((_a = report.SPFontsDataType) != null ? _a : []).flatMap((font) => {
-        var _a2;
-        return (_a2 = font.typefaces) != null ? _a2 : [];
-      }).filter((face) => face.enabled !== "no").map((face) => {
-        var _a2;
-        return (_a2 = face.family) != null ? _a2 : "";
+      if (!isRecord(report) || !Array.isArray(report.SPFontsDataType)) {
+        throw new Error("System font report has an unexpected format");
+      }
+      families = report.SPFontsDataType.flatMap((font) => {
+        if (!isRecord(font) || !Array.isArray(font.typefaces)) return [];
+        return font.typefaces.flatMap((face) => {
+          if (!isRecord(face) || face.enabled === "no" || typeof face.family !== "string") return [];
+          return [face.family];
+        });
       });
     } else if (import_obsidian.Platform.isWin) {
       const script = "Add-Type -AssemblyName System.Drawing; (New-Object System.Drawing.Text.InstalledFontCollection).Families.Name";

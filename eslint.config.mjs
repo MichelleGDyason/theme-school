@@ -11,6 +11,10 @@ export default defineConfig([
       parserOptions: { project: "./tsconfig.json" }
     },
     rules: {
+      "@typescript-eslint/no-unsafe-assignment": "error",
+      "@typescript-eslint/no-unsafe-call": "error",
+      "@typescript-eslint/no-unsafe-member-access": "error",
+      "@typescript-eslint/no-unsafe-return": "error",
       "obsidianmd/ui/sentence-case": ["warn", {
         brands: ["Theme School"],
         acronyms: ["OLED"]

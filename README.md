@@ -71,6 +71,12 @@ npm run build
 
 For watch-mode development, run `npm run dev`. The release assets required by Obsidian are `main.js`, `manifest.json`, and `styles.css`.
 
+## Privacy and release integrity
+
+Theme School has no telemetry and does not upload your theme, font list, or clipboard contents. The **Copy** buttons write only the generated `theme.css` or `manifest.json` you deliberately ask to copy; Theme School never reads the clipboard.
+
+GitHub Actions builds each public release and publishes signed build-provenance attestations for `main.js`, `manifest.json`, and `styles.css`. You can verify a downloaded asset with `gh attestation verify <filename> --repo MichelleGDyason/theme-school`.
+
 ## Support development
 
 If Theme School helps you learn to make your own themes, you can support Michelle's work:
